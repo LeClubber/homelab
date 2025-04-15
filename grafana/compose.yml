@@ -1,0 +1,25 @@
+services:
+  grafana:
+    image: grafana/grafana:11.5.1
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+     - GF_SERVER_ROOT_URL=https://grafana.my.home.com/
+     - GF_PLUGINS_PREINSTALL=grafana-clock-panel
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.grafana.rule=Host(`grafana.my.home.com`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - traefik-proxy
+
+volumes:
+  grafana-storage: {}
+
+networks:
+  traefik-proxy:
+    external: true

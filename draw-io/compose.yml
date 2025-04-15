@@ -1,0 +1,17 @@
+services:
+  drawio:
+    image: jgraph/drawio:26.0.9
+    container_name: drawio
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.drawio.rule=Host(`drawio.my.home.com`)
+      - traefik.http.routers.drawio.entrypoints=websecure
+      - traefik.http.services.drawio.loadbalancer.server.port=8080
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true

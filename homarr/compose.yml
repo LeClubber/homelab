@@ -1,0 +1,26 @@
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/homarr-labs/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - homarr:/appdata
+    environment:
+      - SECRET_ENCRYPTION_KEY= # <--- can be generated with `openssl rand -hex 32`
+      - BASE_URL=homarr.my.home.com
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.homarr.rule=Host(`homarr.my.home.com`)
+      - traefik.http.routers.homarr.entrypoints=websecure
+      - traefik.http.services.homarr.loadbalancer.server.port=7575
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true
+
+volumes:
+  homarr: {}

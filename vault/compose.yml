@@ -1,0 +1,31 @@
+services:
+
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
+    restart: unless-stopped
+    volumes:
+      - file:/vault/file
+      - config:/vault/config
+    environment:
+      - 'VAULT_LOCAL_CONFIG={"storage": {"file": {"path": "/vault/file"}}, "listener": [{"tcp": { "address": "0.0.0.0:8200", "tls_disable": true}}], "default_lease_ttl": "168h", "max_lease_ttl": "720h", "ui": true}'
+    cap_add:
+      - IPC_LOCK
+    command:
+      - "server"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.vault.rule=Host(`vault.my.home.com`)
+      - traefik.http.routers.vault.entrypoints=websecure
+      - traefik.http.services.vault.loadbalancer.server.port=8200
+    networks:
+      - traefik-proxy
+
+volumes:
+  file:
+  config:
+
+networks:
+  traefik-proxy:
+    external: true

@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres
+    container_name: nextcloud-db
+    restart: unless-stopped
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB}
+      - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASSWORD}
+    networks:
+      - backend
+
+  app:
+    image: nextcloud
+    container_name: nextcloud
+    restart: unless-stopped
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${NEXTCLOUD_POSTGRES_DB}
+      - POSTGRES_USER=${NEXTCLOUD_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${NEXTCLOUD_POSTGRES_PASSWORD}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
+    depends_on:
+      - db
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.my.home.com`)
+      - traefik.http.routers.nextcloud.entrypoints=websecure
+      - traefik.http.services.nextcloud.loadbalancer.server.port=80
+    networks:
+      - traefik-proxy
+      - backend
+
+volumes:
+  db:
+  nextcloud:
+
+networks:
+  traefik-proxy:
+    external: true
+  backend: {}

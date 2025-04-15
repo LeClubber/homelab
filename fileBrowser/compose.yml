@@ -1,0 +1,22 @@
+services:
+
+  browser:
+    image: filebrowser/filebrowser
+    container_name: filebrowser
+    restart: unless-stopped
+    volumes:
+      - .:/srv
+      - ./filebrowser.db:/database.db
+      # - ./.filebrowser.json:/.filebrowser.json
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.filebrowser.rule=Host(`filebrowser.my.home.com`)
+      - traefik.http.routers.filebrowser.entrypoints=websecure
+      - traefik.http.services.filebrowser.loadbalancer.server.port=80
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true

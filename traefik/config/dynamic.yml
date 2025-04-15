@@ -1,0 +1,6 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/my.home.com.crt
+        keyFile: /certs/my.home.com.key

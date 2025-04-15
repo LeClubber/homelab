@@ -1,0 +1,82 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:17.7.3-ce.0
+    container_name: gitlab
+    restart: unless-stopped
+    hostname: 'gitlab.my.home.com'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.my.home.com'
+        nginx['listen_https'] = false
+        nginx['listen_port'] = 80
+        nginx['ssl_verify_client'] = "on"
+        nginx['ssl_client_certificate'] = "/etc/pki/tls/certs/root-certs.pem"
+        gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
+        gitlab_rails['omniauth_sync_email_from_provider'] = 'openid_connect'
+        gitlab_rails['omniauth_sync_profile_from_provider'] = ['openid_connect']
+        gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
+        gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'openid_connect'
+        gitlab_rails['omniauth_block_auto_created_users'] = false
+        gitlab_rails['omniauth_auto_link_saml_user'] = true
+        gitlab_rails['omniauth_auto_link_user'] = ["openid_connect"]
+        gitlab_rails['omniauth_providers'] = [
+          {
+            name: 'openid_connect',
+            label: 'My homelab Login',
+            args: {
+              name: 'openid_connect',
+              scope: ['openid','profile','email'],
+              response_type: 'code',
+              issuer: 'https://authentik.my.home.com/application/o/gitlab/',
+              discovery: true,
+              client_auth_method: 'query',
+              uid_field: 'preferred_username',
+              send_scope_to_token_endpoint: 'true',
+              pkce: true,
+              client_options: {
+                identifier: '${OIDC_CLIENT_ID}',
+                secret: '${OIDC_CLIENT_SECRET}',
+                redirect_uri: 'https://gitlab.my.home.com/users/auth/openid_connect/callback'
+              }
+            }
+          }
+        ]
+        gitlab_rails['env'] = {
+          "GITLAB_LOG_LEVEL" => "ERROR"
+        }
+
+    volumes:
+      - './config:/etc/gitlab'
+      - './logs:/var/log/gitlab'
+      - './data:/var/opt/gitlab'
+      - /home/tool/code/traefik/certs/root-ca.crt:/etc/pki/tls/certs/root-certs.pem
+    shm_size: '256m'
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.gitlab.rule=Host(`gitlab.my.home.com`)
+      - traefik.http.routers.gitlab.entrypoints=websecure
+      - traefik.http.services.gitlab.loadbalancer.server.port=80
+    networks:
+      - traefik-proxy
+      
+  runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner-1
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./runner-config/config.toml:/etc/gitlab-runner/config.toml:ro
+      - /home/tool/code/traefik/certs/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
+    # Pour valider l'URL :
+    # - mkdir -p /usr/local/share/ca-certificates
+    # - cp /tmp/root-ca.crt /usr/local/share/ca-certificates/
+    # - update-ca-certificates
+
+networks:
+  traefik-proxy:
+    external: true
+
+volumes:
+  runner-config: {}

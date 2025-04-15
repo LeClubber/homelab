@@ -1,0 +1,16 @@
+log_level = "warning"
+
+[[runners]]
+  name = "gitlab-runner-1"
+  url = "https://gitlab.my.home.com"
+  executor = "docker"
+  token = ""
+  limit = 0
+  [runners.docker]
+    tls_verify = false
+    image = "docker:latest"
+    privileged = true
+    disable_cache = false
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+  [runners.cache]
+    Insecure = false

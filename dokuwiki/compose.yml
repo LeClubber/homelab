@@ -1,0 +1,28 @@
+services:
+
+  dokuwiki:
+    image: dokuwiki/dokuwiki:2024-02-06b
+    container_name: dokuwiki
+    # user: 1000:1000
+    restart: unless-stopped
+    environment:
+      PHP_TIMEZONE: Europe/Paris
+      PHP_MEMORYLIMIT: 256M
+      PHP_UPLOADLIMIT: 128M
+    volumes:
+      - storage:/storage
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      - traefik.http.routers.dokuwiki.rule=Host(`wiki.my.home.com`)
+      - traefik.http.routers.dokuwiki.entrypoints=websecure
+      - traefik.http.services.dokuwiki.loadbalancer.server.port=8080
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true
+
+volumes:
+  storage: {}
